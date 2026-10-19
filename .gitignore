@@ -1,0 +1,33 @@
+# Byte-compiled / cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+*.zip
+
+# Non-ML Paper drafts & Thesis Chapters
+abstract.md
+bab*.md
+jurnal/
+Response_to_Reviewers.*
+referensi*
+*.docx
+*.pdf
+accepted/
+tamplate/
+unused_figures/
+*.ris
+reviews_full.txt
+~$*
+
+# Build and old scripts not part of core ML pipeline
+src/assemble_paper_markdown.py
+src/build_*.py
+src/train_200epochs.py
+src/generate_accurate_figures.py
+src/generate_all_figures.py
+src/generate_all_real_figures.py
+
+# Old numbered figures
+[0-9]*_*.png
