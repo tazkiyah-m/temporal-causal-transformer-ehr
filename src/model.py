@@ -28,12 +28,12 @@ class TemporalCausalTransformer(nn.Module):
         )
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
         
-        # 30-Day Readmission Risk Classifier Head
+        # 30-Day Readmission Risk Classifier Head (Single scalar logit output)
         self.readmission_classifier = nn.Sequential(
             nn.Linear(d_model, d_model // 2),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(d_model // 2, 2)
+            nn.Linear(d_model // 2, 1)
         )
         
         # Auxiliary Biomarker Surrogate Head (exploratory)
@@ -57,7 +57,7 @@ class TemporalCausalTransformer(nn.Module):
         latent = self.transformer_encoder(h, mask=mask)
         pooled = latent[:, -1, :] # final encounter representation
         
-        logits = self.readmission_classifier(pooled)
+        logits = self.readmission_classifier(pooled).squeeze(-1) # shape (B,)
         surrogate_pred = self.surrogate_head(latent).squeeze(-1)
         
         res = {'logits': logits, 'surrogate': surrogate_pred}
@@ -89,7 +89,7 @@ class StandardTransformer(nn.Module):
             nn.Linear(d_model, d_model // 2),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(d_model // 2, 2)
+            nn.Linear(d_model // 2, 1)
         )
 
     def forward(self, x):
@@ -97,7 +97,7 @@ class StandardTransformer(nn.Module):
         h = self.embedding(x) + self.pos_encoder[:, :seq_len, :]
         latent = self.transformer_encoder(h) # No subsequent mask
         pooled = latent[:, -1, :]
-        logits = self.readmission_classifier(pooled)
+        logits = self.readmission_classifier(pooled).squeeze(-1)
         return {'logits': logits}
 
 class GRUBaseline(nn.Module):
@@ -117,11 +117,11 @@ class GRUBaseline(nn.Module):
             nn.Linear(hidden_dim, hidden_dim // 2),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(hidden_dim // 2, 2)
+            nn.Linear(hidden_dim // 2, 1)
         )
 
     def forward(self, x):
         out, h_n = self.gru(x)
         last_step = out[:, -1, :]
-        logits = self.classifier(last_step)
+        logits = self.classifier(last_step).squeeze(-1)
         return {'logits': logits}

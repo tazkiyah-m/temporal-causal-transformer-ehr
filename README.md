@@ -26,13 +26,15 @@ Predicting acute hospital readmission from multi-encounter electronic health rec
 
 ```
 ├── checkpoints/
-│   └── real_benchmark_results.json    # Pre-computed multi-seed raw evaluation tensors & metrics
+│   ├── real_benchmark_results.json    # Pre-computed multi-seed raw evaluation tensors & metrics
+│   └── real_seed42_evaluation.json    # Seed 42 evaluation curves, patient progression & stress tensors
 ├── data_uci/
 │   └── diabetic_data.csv              # UCI Diabetes 130-US Hospitals dataset
 ├── src/
 │   ├── dataset.py                     # Data loader, cohort filtering, feature scaling, & patient-level splits
 │   ├── model.py                       # PyTorch models: Temporal Causal Transformer, GRU, Standard Transformer
 │   ├── run_experiments.py             # 5-seed benchmark runner for all 5 models
+│   ├── run_seed42_real_figures.py     # Seed 42 evaluation, patient progression, & stress test runner
 │   ├── generate_all_verified_figures.py # Script generating Figures 1–7 directly from evaluation tensors
 │   └── statistical_tests.py           # Paired t-test statistical significance calculation
 ├── fig1_comparative_benchmark.png     # Figure 1: Model AUROC Benchmark Bar Chart

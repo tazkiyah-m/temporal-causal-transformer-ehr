@@ -29,5 +29,13 @@ src/generate_accurate_figures.py
 src/generate_all_figures.py
 src/generate_all_real_figures.py
 
+# Build, scratch, and temporary root scripts
+/*.py
+scratch/
+/*.json
+/*.txt
+/*.html
+
 # Old numbered figures
 [0-9]*_*.png
+

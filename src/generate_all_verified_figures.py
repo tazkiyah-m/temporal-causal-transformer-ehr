@@ -213,11 +213,11 @@ def generate_verified_figures():
     # ---------------------------------------------------------
     fig, ax = plt.subplots(figsize=(8.5, 5.8), dpi=300)
     
-    # Compute calibration curves for Causal TF, Standard TF, GRU, XGBoost
+    # Compute calibration curves for Temporal Causal-Masked Transformer, Standard TF, GRU, XGBoost
     for model_name, probs, col, mark in [
-        ('Temporal Causal Transformer', c_probs, '#1f77b4', 's-'),
+        ('Temporal Causal-Masked Transformer', c_probs, '#1f77b4', 's-'),
         ('Standard Transformer', std_probs, '#ff7f0e', 'o--'),
-        ('GRU Baseline', gru_probs, '#d62728', '^-.'),
+        ('Bidirectional GRU', gru_probs, '#d62728', '^-.'),
         ('XGBoost Baseline', xgb_prob, '#2ca02c', 'x:')
     ]:
         p_true, p_pred = calibration_curve(y_test, probs, n_bins=10, strategy='quantile')
@@ -318,13 +318,13 @@ def generate_verified_figures():
     
     fig, ax = plt.subplots(figsize=(8.5, 6.2), dpi=300)
     ax.plot(fpr_c, tpr_c, color='#1f77b4', linewidth=2.4, 
-            label=f"Temporal Causal Transformer (5-Seed Mean AUROC: {bench_summary['Temporal Causal-Masked Transformer']['auroc_mean']:.3f})")
+            label=f"Temporal Causal-Masked Transformer (5-Seed Mean AUROC: {bench_summary['Temporal Causal-Masked Transformer']['auroc_mean']:.3f})")
     ax.plot(fpr_x, tpr_x, color='#2ca02c', linewidth=2.0, linestyle='--',
             label=f"XGBoost Baseline (5-Seed Mean AUROC: {bench_summary['XGBoost']['auroc_mean']:.3f})")
     ax.plot(fpr_s, tpr_s, color='#ff7f0e', linewidth=2.0, linestyle='-.',
             label=f"Standard Transformer (5-Seed Mean AUROC: {bench_summary['Standard Transformer']['auroc_mean']:.3f})")
     ax.plot(fpr_g, tpr_g, color='#d62728', linewidth=1.8, linestyle=':',
-            label=f"GRU Baseline (5-Seed Mean AUROC: {bench_summary['GRU Baseline']['auroc_mean']:.3f})")
+            label=f"Bidirectional GRU (5-Seed Mean AUROC: {bench_summary['GRU Baseline']['auroc_mean']:.3f})")
     ax.plot(fpr_l, tpr_l, color='#7f7f7f', linewidth=1.5, linestyle='-',
             label=f"Logistic Regression (5-Seed Mean AUROC: {bench_summary['Logistic Regression']['auroc_mean']:.3f})")
     ax.plot([0, 1], [0, 1], 'k--', linewidth=1.2, label='Chance Line (AUROC = 0.500)')
@@ -343,7 +343,7 @@ def generate_verified_figures():
     # ---------------------------------------------------------
     # FIG 9: Model Comparison Bar Chart (Starting y at 0.50, No duplicate Chance line in legend)
     # ---------------------------------------------------------
-    models = ['Temporal Causal TF\n(Proposed)', 'XGBoost\n(Tree Ensemble)', 'Standard TF\n(Ablation: No Mask)', 'Logistic Reg.\n(Linear Baseline)', 'GRU\n(Recurrent)']
+    models = ['Temporal Causal-Masked\nTransformer (Proposed)', 'XGBoost\n(Tree Ensemble)', 'Standard Transformer\n(Ablation: No Mask)', 'Logistic Regression\n(Linear Baseline)', 'Bidirectional GRU\n(Recurrent)']
     aurocs = [
         bench_summary['Temporal Causal-Masked Transformer']['auroc_mean'],
         bench_summary['XGBoost']['auroc_mean'],
@@ -399,11 +399,11 @@ def generate_verified_figures():
     ax.plot(rec_x, prec_x, color='#2ca02c', linewidth=2.2, linestyle='--',
             label=f"XGBoost Baseline (Seed 42 AP: {ap_x:.3f} | 5-Seed Mean: {bench_summary['XGBoost']['auprc_mean']:.3f})")
     ax.plot(rec_c, prec_c, color='#1f77b4', linewidth=2.4, 
-            label=f"Temporal Causal Transformer (Seed 42 AP: {ap_c:.3f} | 5-Seed Mean: {bench_summary['Temporal Causal-Masked Transformer']['auprc_mean']:.3f})")
+            label=f"Temporal Causal-Masked Transformer (Seed 42 AP: {ap_c:.3f} | 5-Seed Mean: {bench_summary['Temporal Causal-Masked Transformer']['auprc_mean']:.3f})")
     ax.plot(rec_s, prec_s, color='#ff7f0e', linewidth=2.0, linestyle='-.',
             label=f"Standard Transformer (Seed 42 AP: {ap_s:.3f} | 5-Seed Mean: {bench_summary['Standard Transformer']['auprc_mean']:.3f})")
     ax.plot(rec_g, prec_g, color='#d62728', linewidth=1.8, linestyle=':',
-            label=f"GRU Baseline (Seed 42 AP: {ap_g:.3f} | 5-Seed Mean: {bench_summary['GRU Baseline']['auprc_mean']:.3f})")
+            label=f"Bidirectional GRU (Seed 42 AP: {ap_g:.3f} | 5-Seed Mean: {bench_summary['GRU Baseline']['auprc_mean']:.3f})")
     ax.plot(rec_l, prec_l, color='#7f7f7f', linewidth=1.5, linestyle='-',
             label=f"Logistic Regression (Seed 42 AP: {ap_l:.3f} | 5-Seed Mean: {bench_summary['Logistic Regression']['auprc_mean']:.3f})")
             

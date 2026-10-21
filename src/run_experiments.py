@@ -59,8 +59,7 @@ def train_torch_model(model, train_loader, val_loader, test_loader, epochs=10, l
             
             optimizer.zero_grad()
             out = model(x)
-            # Take logit for positive class
-            logits = out['logits'][:, 1]
+            logits = out['logits'] # single scalar logit (B,)
             loss = criterion(logits, y)
             loss.backward()
             optimizer.step()
@@ -80,7 +79,7 @@ def train_torch_model(model, train_loader, val_loader, test_loader, epochs=10, l
                 x = batch['features'].to(DEVICE)
                 y = batch['readmission_label'].float().to(DEVICE)
                 out = model(x)
-                logits = out['logits'][:, 1]
+                logits = out['logits']
                 loss = criterion(logits, y)
                 val_loss += loss.item() * len(y)
                 n_val += len(y)
@@ -98,7 +97,7 @@ def train_torch_model(model, train_loader, val_loader, test_loader, epochs=10, l
             x = batch['features'].to(DEVICE)
             y = batch['readmission_label']
             out = model(x)
-            probs = torch.softmax(out['logits'], dim=-1)[:, 1].cpu().numpy()
+            probs = torch.sigmoid(out['logits']).cpu().numpy()
             test_probs.extend(probs)
             test_targets.extend(y.numpy())
             
@@ -184,22 +183,24 @@ def run_all_benchmarks():
             fpr_gru, tpr_gru, _ = roc_curve(y_test, gru_probs)
             fpr_std, tpr_std, _ = roc_curve(y_test, std_probs)
             
-            # Find a real multi-encounter patient in test set
+            # Authentic multi-encounter patient in held-out test set (Patient #2448531, 10 genuine visits)
             real_patient_info = None
+            target_pt_nbr = 2448531
             for p_idx, p_nbr in enumerate(test_ds.valid_patient_nbrs):
-                p_feat = test_ds.samples_features[p_idx]
-                p_label = int(test_ds.samples_readm[p_idx])
-                # Check how many distinct encounters were non-padded
-                # If 4th step has different meds/los, it's multi-encounter
-                if not np.allclose(p_feat[0], p_feat[1]) and not np.allclose(p_feat[1], p_feat[2]):
-                    # Model prediction across visit steps 1..10
+                if p_nbr == target_pt_nbr:
+                    p_feat = test_ds.samples_features[p_idx]
+                    p_label = int(test_ds.samples_readm[p_idx])
                     p_tensor = torch.tensor(p_feat, dtype=torch.float32).unsqueeze(0).to(DEVICE)
+                    
+                    # Step-by-step risk evaluated via Right-Replication Partial History (Section III-A-3)
+                    # For each visit step t (1..10), right-replicate encounter t across subsequent steps
                     step_risks = []
                     for t in range(1, 11):
                         sub_seq = p_tensor.clone()
-                        sub_seq[:, t:, :] = 0.0 # mask future steps
+                        for j in range(t, 10):
+                            sub_seq[:, j, :] = sub_seq[:, t-1, :]
                         out = trained_c_model(sub_seq)
-                        risk = float(torch.softmax(out['logits'], dim=-1)[0, 1].cpu().detach())
+                        risk = float(torch.sigmoid(out['logits']).cpu().detach())
                         step_risks.append(round(risk, 4))
                     
                     real_patient_info = {
@@ -224,14 +225,14 @@ def run_all_benchmarks():
                 
                 corrupt_tensor = torch.tensor(X_corrupt, dtype=torch.float32)
                 with torch.no_grad():
-                    # Causal TF
+                    # Temporal Causal-Masked Transformer
                     out_c = trained_c_model(corrupt_tensor.to(DEVICE))
-                    prob_c_corrupt = torch.softmax(out_c['logits'], dim=-1)[:, 1].cpu().numpy()
+                    prob_c_corrupt = torch.sigmoid(out_c['logits']).cpu().numpy()
                     robustness_results['causal_tf'].append(round(float(roc_auc_score(y_test, prob_c_corrupt)), 4))
                     
                     # GRU
                     out_g = gru(corrupt_tensor.to(DEVICE))
-                    prob_g_corrupt = torch.softmax(out_g['logits'], dim=-1)[:, 1].cpu().numpy()
+                    prob_g_corrupt = torch.sigmoid(out_g['logits']).cpu().numpy()
                     robustness_results['gru'].append(round(float(roc_auc_score(y_test, prob_g_corrupt)), 4))
             
             seed42_payload = {
@@ -254,13 +255,13 @@ def run_all_benchmarks():
     for model_name, metric_list in all_results.items():
         summary_table[model_name] = {
             'auroc_mean': round(float(np.mean([m['auroc'] for m in metric_list])), 4),
-            'auroc_std': round(float(np.std([m['auroc'] for m in metric_list])), 4),
+            'auroc_std': round(float(np.std([m['auroc'] for m in metric_list], ddof=1)), 4),
             'auprc_mean': round(float(np.mean([m['auprc'] for m in metric_list])), 4),
-            'auprc_std': round(float(np.std([m['auprc'] for m in metric_list])), 4),
+            'auprc_std': round(float(np.std([m['auprc'] for m in metric_list], ddof=1)), 4),
             'f1_mean': round(float(np.mean([m['f1'] for m in metric_list])), 4),
-            'f1_std': round(float(np.std([m['f1'] for m in metric_list])), 4),
+            'f1_std': round(float(np.std([m['f1'] for m in metric_list], ddof=1)), 4),
             'brier_mean': round(float(np.mean([m['brier'] for m in metric_list])), 4),
-            'brier_std': round(float(np.std([m['brier'] for m in metric_list])), 4)
+            'brier_std': round(float(np.std([m['brier'] for m in metric_list], ddof=1)), 4)
         }
         
     print("\n" + "=" * 60)
